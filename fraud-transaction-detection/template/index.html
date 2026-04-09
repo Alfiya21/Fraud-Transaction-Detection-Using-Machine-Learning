@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TxnGuard — AI Fraud Detection</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0f1e;
+    --bg-card: #111827;
+    --bg-card2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --success: #10b981;
+    --danger: #ef4444;
+    --danger-bg: rgba(239,68,68,0.1);
+    --success-bg: rgba(16,185,129,0.1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem; height: 60px;
+    background: rgba(10,15,30,0.85);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .nav-brand span { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a { font-size: 14px; color: var(--text-muted); transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-badge {
+    font-size: 12px; padding: 4px 12px; border-radius: 20px;
+    background: rgba(99,102,241,0.15); color: var(--accent-light);
+    border: 1px solid rgba(99,102,241,0.3);
+  }
+
+  /* HERO */
+  .hero {
+    padding: 7rem 2rem 5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 5px 14px; border-radius: 20px;
+    background: rgba(99,102,241,0.1); color: var(--accent-light);
+    border: 1px solid rgba(99,102,241,0.25);
+    margin-bottom: 1.5rem;
+  }
+  .hero-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 700; letter-spacing: -1.5px;
+    line-height: 1.15; margin-bottom: 1.25rem;
+  }
+  .hero h1 span { color: var(--accent-light); }
+  .hero p {
+    font-size: 17px; color: var(--text-muted);
+    max-width: 520px; margin: 0 auto 2.5rem;
+    line-height: 1.7;
+  }
+  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    padding: 11px 24px; border-radius: 8px;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 600; border: none; cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost {
+    padding: 11px 24px; border-radius: 8px;
+    background: transparent; color: var(--text-muted);
+    font-size: 14px; font-weight: 500;
+    border: 1px solid var(--border-hover); cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+
+  /* STATS STRIP */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-item {
+    padding: 2rem 1.5rem;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.5px; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .stat-num.green { color: var(--success); }
+  .stat-label { font-size: 12px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* SECTIONS */
+  section { padding: 5rem 2rem; }
+  .section-inner { max-width: 1000px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent-light); margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-size: clamp(22px, 3vw, 30px); font-weight: 700;
+    letter-spacing: -0.5px; margin-bottom: 1rem;
+  }
+  .section-sub { font-size: 15px; color: var(--text-muted); max-width: 560px; line-height: 1.7; }
+
+  /* ABOUT */
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2rem; margin-top: 3rem; align-items: start;
+  }
+  @media(max-width: 680px) { .about-grid { grid-template-columns: 1fr; } }
+  .about-text p { color: var(--text-muted); line-height: 1.8; margin-bottom: 1rem; font-size: 15px; }
+  .about-specs { display: flex; flex-direction: column; gap: 12px; }
+  .spec-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .spec-label { font-size: 13px; color: var(--text-muted); }
+  .spec-value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .spec-value.green { color: var(--success); }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px; margin-top: 3rem;
+  }
+  .feature-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: var(--border-hover); }
+  .feature-icon {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: rgba(99,102,241,0.12);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .feature-icon svg { width: 18px; height: 18px; stroke: var(--accent-light); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .feature-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .feature-card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); }
+
+  /* ANALYZE FORM */
+  #analyze { background: var(--bg); border-top: 1px solid var(--border); }
+  .analyze-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2rem; margin-top: 3rem; align-items: start;
+  }
+  @media(max-width: 720px) { .analyze-grid { grid-template-columns: 1fr; } }
+
+  .form-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.75rem;
+  }
+  .form-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 1.5rem; }
+
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.2px;
+  }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-hover);
+    border-radius: 8px; font-size: 14px; color: var(--text);
+    outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .form-group input::placeholder { color: var(--text-faint); }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--accent); background: rgba(99,102,241,0.05);
+  }
+  .form-group select option { background: #1a2235; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .submit-btn {
+    width: 100%; padding: 12px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    margin-top: 0.5rem; transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.2px;
+  }
+  .submit-btn:hover { background: #4f46e5; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { background: #2d3748; color: var(--text-faint); cursor: not-allowed; }
+
+  /* SPINNER */
+  .spinner {
+    display: none; width: 28px; height: 28px; margin: 1.5rem auto;
+    border: 3px solid var(--border-hover);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESULT */
+  .result-card {
+    display: none; margin-top: 1.25rem;
+    border-radius: 10px; padding: 1.25rem;
+    border: 1px solid;
+  }
+  .result-card.fraud { background: var(--danger-bg); border-color: rgba(239,68,68,0.25); }
+  .result-card.legit { background: var(--success-bg); border-color: rgba(16,185,129,0.25); }
+  .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .result-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .result-dot.fraud { background: var(--danger); }
+  .result-dot.legit { background: var(--success); }
+  .result-label { font-size: 15px; font-weight: 700; }
+  .result-label.fraud { color: #fca5a5; }
+  .result-label.legit { color: #6ee7b7; }
+  .result-prob { font-size: 13px; color: var(--text-muted); }
+
+  /* GAUGE BAR */
+  .gauge-wrap { margin: 12px 0 0; }
+  .gauge-track {
+    height: 6px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden; margin-bottom: 6px;
+  }
+  .gauge-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+  .gauge-fill.fraud { background: var(--danger); }
+  .gauge-fill.legit { background: var(--success); }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); }
+
+  /* SHAP PANEL */
+  .shap-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.75rem;
+  }
+  .shap-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .shap-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+  .shap-empty {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-faint); font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+  .shap-bar { margin-bottom: 14px; }
+  .shap-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; margin-bottom: 5px;
+  }
+  .shap-name { color: var(--text-muted); }
+  .shap-dir { font-size: 11px; font-weight: 600; }
+  .shap-dir.up { color: #fca5a5; }
+  .shap-dir.down { color: #6ee7b7; }
+  .shap-track2 {
+    height: 6px; background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden;
+  }
+  .shap-fill2 {
+    height: 100%; border-radius: 3px; transition: width 0.5s ease;
+  }
+  .shap-fill2.up { background: var(--danger); }
+  .shap-fill2.down { background: var(--success); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  footer p { font-size: 13px; color: var(--text-faint); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 13px; color: var(--text-faint); transition: color 0.15s; }
+  .footer-links a:hover { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">T</div>
+    <span>TxnGuard</span>
+  </div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#features">Features</a>
+    <a href="#analyze">Analyze</a>
+  </div>
+  <div class="nav-badge">ROC-AUC 0.9749</div>
+</nav>
+
+<section class="hero">
+  <div class="hero-pill">
+    <span class="hero-pill-dot"></span>
+    Live fraud detection system
+  </div>
+  <h1>Guard every transaction<br>with <span>machine learning</span></h1>
+  <p>TxnGuard analyzes behavioral patterns and transaction signals to detect fraud in real time — with SHAP explainability for every prediction.</p>
+  <div class="hero-actions">
+    <a href="#analyze"><button class="btn-primary">Analyze a transaction</button></a>
+    <a href="#about"><button class="btn-ghost">How it works</button></a>
+  </div>
+</section>
+
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-num green">0.9749</div>
+    <div class="stat-label">ROC-AUC Score</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">1.75M+</div>
+    <div class="stat-label">Transactions trained on</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">438</div>
+    <div class="stat-label">False negatives</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num green">XGBoost</div>
+    <div class="stat-label">Best model</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">SHAP</div>
+    <div class="stat-label">Explainability method</div>
+  </div>
+</div>
+
+<section id="about">
+  <div class="section-inner">
+    <span class="section-tag">About the project</span>
+    <h2 class="section-title">What is TxnGuard?</h2>
+    <p class="section-sub">An end-to-end machine learning pipeline built to detect fraudulent financial transactions with high precision and full explainability.</p>
+
+    <div class="about-grid">
+      <div class="about-text">
+        <p>Financial fraud causes billions in losses annually. TxnGuard tackles this by training ensemble models on over 1.75 million transactions, including real-world fraud scenarios: high-value fraud, terminal compromise, and customer credential leakage.</p>
+        <p>The system engineers time-based, customer-behavioral, and terminal-risk features, then uses SMOTE to address severe class imbalance. XGBoost and Random Forest classifiers are trained and benchmarked — XGBoost achieves a ROC-AUC of 0.9749.</p>
+        <p>Every prediction is explained using SHAP (SHapley Additive exPlanations), making the model transparent and trustworthy for real-world fraud flagging decisions.</p>
+      </div>
+      <div class="about-specs">
+        <div class="spec-row"><span class="spec-label">Dataset size</span><span class="spec-value">1.75M+ transactions</span></div>
+        <div class="spec-row"><span class="spec-label">Primary model</span><span class="spec-value">XGBoost Classifier</span></div>
+        <div class="spec-row"><span class="spec-label">Baseline model</span><span class="spec-value">Random Forest</span></div>
+        <div class="spec-row"><span class="spec-label">Imbalance handling</span><span class="spec-value">SMOTE oversampling</span></div>
+        <div class="spec-row"><span class="spec-label">ROC-AUC</span><span class="spec-value green">0.9749</span></div>
+        <div class="spec-row"><span class="spec-label">False negatives</span><span class="spec-value">438 (threshold tuned)</span></div>
+        <div class="spec-row"><span class="spec-label">Explainability</span><span class="spec-value">SHAP force plots</span></div>
+        <div class="spec-row"><span class="spec-label">Built by</span><span class="spec-value">Alfiya Mulla</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="features">
+  <div class="section-inner">
+    <span class="section-tag">Capabilities</span>
+    <h2 class="section-title">What the system does</h2>
+    <p class="section-sub">From raw transactions to explainable fraud signals — TxnGuard covers the full detection pipeline.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3>Real-time prediction</h3>
+        <p>Submit a transaction and receive an instant fraud or legitimate verdict with a confidence probability score.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg>
+        </div>
+        <h3>SHAP explainability</h3>
+        <p>Every prediction is accompanied by SHAP values showing exactly which features drove the model's decision.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Behavioral analysis</h3>
+        <p>Customer spending patterns over 7 and 30-day windows are analyzed to detect anomalous transaction behavior.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3>Terminal risk scoring</h3>
+        <p>Terminal-level fraud history and average transaction amounts are used as risk signals in the feature space.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Time-aware features</h3>
+        <p>Transaction hour, day of week, and weekend flags capture temporal fraud patterns invisible to simple models.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>Model benchmarking</h3>
+        <p>XGBoost and Random Forest are evaluated side-by-side. XGBoost wins on recall and ROC-AUC for imbalanced data.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="analyze">
+  <div class="section-inner">
+    <span class="section-tag">Live demo</span>
+    <h2 class="section-title">Analyze a transaction</h2>
+    <p class="section-sub">Enter transaction details below to get an instant fraud prediction with feature-level SHAP explanations.</p>
+
+    <div class="analyze-grid">
+      <div class="form-card">
+        <h3>Transaction details</h3>
+        <form method="POST" onsubmit="handleSubmit(event)">
+          <div class="form-group">
+            <label>Transaction amount (₹)</label>
+            <input type="number" name="amount" id="amount" placeholder="e.g. 15000" min="0" step="0.01" required/>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Hour (0–23)</label>
+              <input type="number" name="tx_hour" id="tx_hour" placeholder="e.g. 14" min="0" max="23" required/>
+            </div>
+            <div class="form-group">
+              <label>Day of week (0=Mon)</label>
+              <input type="number" name="tx_day" id="tx_day" placeholder="e.g. 3" min="0" max="6" required/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Weekend transaction?</label>
+            <select name="is_weekend" id="is_weekend">
+              <option value="0">No — weekday</option>
+              <option value="1">Yes — weekend</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Avg spend — 7 days (₹)</label>
+              <input type="number" name="avg_7d" id="avg_7d" placeholder="e.g. 8000" min="0" required/>
+            </div>
+            <div class="form-group">
+              <label>Tx count — 7 days</label>
+              <input type="number" name="count_7d" id="count_7d" placeholder="e.g. 5" min="0" required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Avg spend — 30 days (₹)</label>
+              <input type="number" name="avg_30d" id="avg_30d" placeholder="e.g. 9000" min="0" required/>
+            </div>
+            <div class="form-group">
+              <label>Tx count — 30 days</label>
+              <input type="number" name="count_30d" id="count_30d" placeholder="e.g. 18" min="0" required/>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="submit-btn">Run fraud analysis</button>
+        </form>
+
+        <div class="spinner" id="spinner"></div>
+
+        <div class="result-card" id="result-card">
+          <div class="result-header">
+            <div class="result-dot" id="result-dot"></div>
+            <div>
+              <div class="result-label" id="result-label"></div>
+              <div class="result-prob" id="result-prob"></div>
+            </div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-track">
+              <div class="gauge-fill" id="gauge-fill" style="width:0%"></div>
+            </div>
+            <div class="gauge-labels"><span>0% fraud risk</span><span>100%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shap-card">
+        <h3>Why did the model decide this?</h3>
+        <p>SHAP values show which features increased or reduced the fraud probability for this transaction.</p>
+        <div id="shap-container">
+          <div class="shap-empty">Run an analysis to see feature-level explanations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 TxnGuard — AI Fraud Detection by Alfiya Mulla</p>
+  <div class="footer-links">
+    <a href="https://github.com/Alfiya21/Fraud-Transaction-Detection-Using-Machine-Learning" target="_blank">GitHub</a>
+    <a href="https://www.linkedin.com/in/alfiya-mulla" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+const FEATURE_LABELS = {
+  tx_amount: "Transaction amount",
+  tx_hour: "Hour of transaction",
+  tx_day_of_week: "Day of week",
+  is_weekend: "Weekend flag",
+  customer_avg_amount_7d: "Avg spend (7 days)",
+  customer_tx_count_7d: "Tx count (7 days)",
+  customer_avg_amount_30d: "Avg spend (30 days)",
+  customer_tx_count_30d: "Tx count (30 days)",
+};
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById("submit-btn");
+  const spinner = document.getElementById("spinner");
+  const resultCard = document.getElementById("result-card");
+
+  btn.disabled = true;
+  btn.textContent = "Analysing...";
+  spinner.style.display = "block";
+  resultCard.style.display = "none";
+
+  const payload = {
+    tx_amount: document.getElementById("amount").value,
+    tx_hour: document.getElementById("tx_hour").value,
+    tx_day_of_week: document.getElementById("tx_day").value,
+    is_weekend: document.getElementById("is_weekend").value,
+    customer_avg_amount_7d: document.getElementById("avg_7d").value,
+    customer_tx_count_7d: document.getElementById("count_7d").value,
+    customer_avg_amount_30d: document.getElementById("avg_30d").value,
+    customer_tx_count_30d: document.getElementById("count_30d").value,
+  };
+
+  try {
+    const res = await fetch("/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showResult(data);
+  } catch(err) {
+    alert("Prediction failed. Check server logs.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Run fraud analysis";
+    spinner.style.display = "none";
+  }
+}
+
+function showResult(data) {
+  const isFraud = data.prediction === 1;
+  const prob = parseFloat(data.probability).toFixed(1);
+  const card = document.getElementById("result-card");
+
+  card.className = "result-card " + (isFraud ? "fraud" : "legit");
+  document.getElementById("result-dot").className = "result-dot " + (isFraud ? "fraud" : "legit");
+  document.getElementById("result-label").className = "result-label " + (isFraud ? "fraud" : "legit");
+  document.getElementById("result-label").textContent = isFraud ? "Fraud detected" : "Legitimate transaction";
+  document.getElementById("result-prob").textContent = "Fraud probability: " + prob + "%";
+
+  const fill = document.getElementById("gauge-fill");
+  fill.className = "gauge-fill " + (isFraud ? "fraud" : "legit");
+  fill.style.width = prob + "%";
+  card.style.display = "block";
+
+  renderShap(data.shap_values);
+}
+
+function renderShap(values) {
+  const container = document.getElementById("shap-container");
+  if (!values || !values.length) return;
+
+  const maxAbs = Math.max(...values.map(v => Math.abs(v.value)));
+  container.innerHTML = values.map(v => {
+    const pct = Math.round((Math.abs(v.value) / maxAbs) * 100);
+    const isUp = v.value >= 0;
+    return `<div class="shap-bar">
+      <div class="shap-meta">
+        <span class="shap-name">${FEATURE_LABELS[v.feature] || v.feature} <span style="color:#475569;font-size:11px">(${v.input})</span></span>
+        <span class="shap-dir ${isUp ? 'up' : 'down'}">${isUp ? '↑ raises risk' : '↓ lowers risk'}</span>
+      </div>
+      <div class="shap-track2">
+        <div class="shap-fill2 ${isUp ? 'up' : 'down'}" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+</script>
+</body>
+</html>
